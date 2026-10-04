@@ -10,7 +10,7 @@ live visualizer right in the player bar.
 |---|---|
 | ![Bars](docs/screenshots/bars.png) | ![Raindrops](docs/screenshots/raindrops.png) |
 | **Space** | **Black Holes** |
-| ![Space](docs/screenshots/space.png) | ![Black Holes](docs/screenshots/blackholes.png) |
+| ![Space](docs/screenshots/space.png)
 
 ## Features
 
