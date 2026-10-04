@@ -1,0 +1,51 @@
+{
+  "name": "slmp",
+  "version": "1.0.0",
+  "description": "SLMP - Simple Local Music Player: folders are playlists, with audio-reactive screensavers",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron . --disable-gpu-sandbox",
+    "build:linux": "electron-builder --linux AppImage"
+  },
+  "keywords": [
+    "music-player",
+    "electron",
+    "visualizer",
+    "steam-deck",
+    "linux"
+  ],
+  "author": "catastrophic-impact",
+  "homepage": "https://github.com/catastrophic-impact/slmp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/catastrophic-impact/slmp.git"
+  },
+  "license": "GPL-3.0-or-later",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3"
+  },
+  "dependencies": {
+    "pixi.js": "^8.20.0"
+  },
+  "build": {
+    "appId": "org.slmp.player",
+    "productName": "SLMP",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "AudioVideo",
+      "synopsis": "Simple Local Music Player"
+    },
+    "artifactName": "SLMP-${version}-${arch}.${ext}"
+  }
+}

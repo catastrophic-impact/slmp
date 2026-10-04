@@ -1,0 +1,50 @@
+/* SLMP - Simple Local Music Player
+ * Copyright (C) 2026 catastrophic-impact
+ * SPDX-License-Identifier: GPL-3.0-or-later */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+  cursor: none;
+}
+
+canvas {
+  display: block;
+}
+
+#saver-root {
+  position: fixed;
+  inset: 0;
+}
+
+/* Status Banner Overlay */
+#status-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  color: #00ffcc;
+  font-family: monospace;
+  font-size: 16px;
+  padding: 12px 20px;
+  z-index: 99999;
+  text-align: center;
+  border-bottom: 2px solid #00ffcc;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  pointer-events: none;
+  white-space: pre-line;
+}
+
+#status-banner.visible {
+  opacity: 1;
+}

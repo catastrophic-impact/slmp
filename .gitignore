@@ -1,0 +1,7 @@
+# Dependencies and build output (recreate with `npm ci` / `npm run build:linux`)
+node_modules/
+dist/
+*.AppImage
+
+# Generated on first run; holds personal paths and preferences
+slmp.conf

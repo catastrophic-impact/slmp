@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<!-- SLMP - Simple Local Music Player | Copyright (C) 2026 catastrophic-impact | SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;">
+  <title>Screensaver</title>
+  <link rel="stylesheet" href="saver.css">
+  <script src="../../node_modules/pixi.js/dist/pixi.min.js"></script>
+  <!-- Lets pixi run under this page's strict CSP (no eval) -->
+  <script src="../../node_modules/pixi.js/dist/packages/unsafe-eval.min.js"></script>
+  <script src="saver-common.js"></script>
+  <script src="bars.js"></script>
+  <script src="raindrops.js"></script>
+  <script src="chaos.js"></script>
+  <script src="journey.js"></script>
+  <script src="space.js"></script>
+  <script src="hungry.js"></script>
+  <script src="blackholes.js"></script>
+  <script src="saver-window.js"></script>
+</head>
+<body>
+  <div id="status-banner"></div>
+  <div id="saver-root"></div>
+</body>
+</html>

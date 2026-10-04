@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<!-- SLMP - Simple Local Music Player | Copyright (C) 2026 catastrophic-impact | SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; media-src 'self' http://127.0.0.1:*; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;">
+  <title>Simple Local Music Player</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div id="path-display">/</div>
+    </header>
+
+    <main class="browser-container">
+      <ul id="file-list"></ul>
+    </main>
+
+    <footer class="player-bar">
+      <div id="now-playing">Nothing playing</div>
+
+      <!-- Progress Row -->
+      <div class="progress-container">
+        <span id="time-elapsed" class="time-stamp">00:00</span>
+        <input type="range" id="seek-slider" min="0" max="100" value="0" step="0.1">
+        <span id="time-duration" class="time-stamp">00:00</span>
+      </div>
+
+      <!-- Controls Row -->
+      <div class="controls">
+        <!-- .label text is hidden in compact mode; .compact-only icons only show there -->
+        <button id="btn-prev" title="Previous Track (P)"><span class="icon">⏮</span><span class="label">Prev</span></button>
+        <button id="btn-play" title="Play / Pause (Space)"><span class="icon">▶</span><span class="label">Play</span></button>
+        <button id="btn-next" title="Next Track (N)"><span class="label">Next</span><span class="icon">⏭</span></button>
+        <button id="btn-shuffle" title="Shuffle (S)"><span class="icon compact-only">🔀</span><span class="label">Shuffle: OFF</span></button>
+        <button id="btn-repeat" title="Repeat (R)"><span class="icon compact-only">🔁</span><span class="label">Repeat: All</span></button>
+
+        <!-- Mini visualizer doubles as the screensaver menu button -->
+        <div class="mini-viz-wrap">
+          <div id="mini-viz" role="button" tabindex="0" title="Screensaver">
+            <div id="mini-viz-stage"></div>
+            <span id="mini-viz-label">📺 Screensaver</span>
+          </div>
+          <div id="screensaver-menu" hidden>
+            <div id="screensaver-list"></div>
+            <div class="menu-divider"></div>
+            <button data-action="window">🗗 Open window</button>
+            <button data-action="fullscreen">⛶ Open fullscreen</button>
+          </div>
+        </div>
+
+        <!-- App Volume Slider -->
+        <div class="volume-container">
+          <span id="vol-icon">🔊</span>
+          <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1">
+        </div>
+
+        <button id="btn-settings" title="Settings">⚙</button>
+        <button id="btn-compact" title="Compact mode">⇲</button>
+      </div>
+    </footer>
+
+    <!-- Settings Panel (built from the config schema by settings.js) -->
+    <section id="settings-panel" hidden>
+      <header class="settings-header">
+        <h2>Settings</h2>
+        <button id="btn-settings-close" title="Close (Esc)">✕</button>
+      </header>
+      <nav id="settings-tabs"></nav>
+      <div id="settings-body"></div>
+    </section>
+  </div>
+
+  <audio id="audio-engine"></audio>
+  <script src="../node_modules/pixi.js/dist/pixi.min.js"></script>
+  <!-- Lets pixi run under this page's strict CSP (no eval) -->
+  <script src="../node_modules/pixi.js/dist/packages/unsafe-eval.min.js"></script>
+  <script src="partymode/saver-common.js"></script>
+  <script src="partymode/bars.js"></script>
+  <script src="partymode/raindrops.js"></script>
+  <script src="partymode/chaos.js"></script>
+  <script src="partymode/journey.js"></script>
+  <script src="partymode/space.js"></script>
+  <script src="partymode/hungry.js"></script>
+  <script src="partymode/blackholes.js"></script>
+  <script src="spectrum.js"></script>
+  <script src="renderer.js" defer></script>
+  <script src="settings.js" defer></script>
+</body>
+</html>
