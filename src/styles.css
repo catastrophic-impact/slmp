@@ -1,0 +1,998 @@
+/* SLMP - Simple Local Music Player
+ * Copyright (C) 2026 catastrophic-impact
+ * SPDX-License-Identifier: GPL-3.0-or-later */
+
+/* ==========================================
+   1. THEME TOKENS
+   --accent-rgb / --on-accent are set from general.accent by renderer.js
+   ================================          */
+:root {
+  --accent-rgb: 137, 180, 250;
+  --accent: rgb(var(--accent-rgb));
+  --on-accent: #0b0b12;
+  --accent-soft: rgba(var(--accent-rgb), 0.14);
+  --accent-glow: rgba(var(--accent-rgb), 0.45);
+
+  --bg-0: #0b0b12;
+  --bg-1: #11111a;
+  --bg-2: #181824;
+  --surface: #202030;
+  --surface-hi: #2a2a3d;
+  --line: rgba(255, 255, 255, 0.07);
+  --line-hi: rgba(255, 255, 255, 0.14);
+
+  --text: #e8eaf6;
+  --text-dim: #9a9eb8;
+  --text-faint: #686c86;
+
+  --radius: 10px;
+  --stamp-w: 62px;
+  --progress-gap: 10px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+
+/* ==========================================
+   2. GLOBAL & APP CONTAINER
+   ================================          */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-ui);
+  background: var(--bg-0);
+  color: var(--text);
+  user-select: none;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: relative;
+  background:
+    radial-gradient(900px 420px at 15% -12%, rgba(var(--accent-rgb), 0.16), transparent 70%),
+    radial-gradient(700px 400px at 100% 110%, rgba(var(--accent-rgb), 0.08), transparent 70%),
+    var(--bg-0);
+}
+
+button {
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85em;
+  font-weight: 500;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease), transform 0.12s var(--ease), box-shadow 0.2s var(--ease), border-color 0.15s var(--ease);
+}
+
+button:hover {
+  background: var(--surface-hi);
+  border-color: var(--line-hi);
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+
+*:focus,
+*:active {
+  outline: none !important;
+}
+
+/* Keyboard focus ring only (clicks drop focus in renderer.js) */
+button:focus-visible,
+#mini-viz:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px;
+}
+
+/* Square icon-only button */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  font-size: 18px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-dim);
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: transparent;
+  color: var(--text);
+}
+
+/* Shuffle / repeat: lit when on */
+.toggle-btn.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.toggle-btn.off {
+  color: var(--text-faint);
+}
+
+
+/* ==========================================
+   3. TOP BAR (breadcrumb + window buttons)
+   ================================          */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  background: rgba(17, 17, 26, 0.72);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+
+.crumbs {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 0.88em;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden; /* renderer.js scrolls to the end so the current folder stays visible */
+}
+
+.crumbs .crumb {
+  flex: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.crumbs .crumb:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.crumbs .crumb:last-child {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.crumbs .sep {
+  flex: none;
+  color: var(--text-faint);
+}
+
+#btn-up:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+
+/* ==========================================
+   4. FILE BROWSER
+   ================================          */
+.browser-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 10px 14px;
+}
+
+#file-list {
+  list-style: none;
+}
+
+#file-list li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  margin-bottom: 2px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.92em;
+  color: var(--text);
+  transition: background 0.15s var(--ease), transform 0.15s var(--ease);
+}
+
+#file-list li:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+#file-list li:active {
+  transform: scale(0.992);
+}
+
+#file-list .row-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-dim);
+  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+#file-list .row-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#file-list .row-end {
+  flex: none;
+  color: var(--text-faint);
+  font-size: 14px;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+}
+
+#file-list li.directory .row-icon {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+#file-list li.directory:hover .row-end {
+  opacity: 1;
+  transform: none;
+}
+
+/* Playing row */
+#file-list li.active {
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.2), rgba(var(--accent-rgb), 0.04));
+  color: var(--accent);
+  font-weight: 600;
+}
+
+#file-list li.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+#file-list li.active .row-icon {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+
+/* Animated equalizer glyph shown on the playing row */
+.eq {
+  display: none;
+  align-items: flex-end;
+  gap: 2px;
+  width: 14px;
+  height: 14px;
+}
+
+.eq i {
+  flex: 1;
+  height: 100%;
+  background: currentColor;
+  border-radius: 1px;
+  transform-origin: bottom;
+  animation: eq-bounce 0.9s ease-in-out infinite;
+}
+
+.eq i:nth-child(2) { animation-delay: -0.35s; animation-duration: 0.7s; }
+.eq i:nth-child(3) { animation-delay: -0.6s; animation-duration: 1.1s; }
+
+@keyframes eq-bounce {
+  0%, 100% { transform: scaleY(0.25); }
+  50% { transform: scaleY(1); }
+}
+
+#file-list li.active .eq { display: flex; }
+#file-list li.active .row-icon svg { display: none; }
+body.paused .eq i { animation-play-state: paused; transform: scaleY(0.4); }
+
+.empty-state {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  padding: 48px 0;
+  color: var(--text-faint);
+  font-size: 0.9em;
+  text-align: center;
+}
+
+.empty-state svg {
+  width: 34px;
+  height: 34px;
+  opacity: 0.6;
+}
+
+
+/* ==========================================
+   5. PLAYER BAR
+   ================================          */
+.player-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  grid-template-areas:
+    'info viz'
+    'transport viz'
+    'progress viz';
+  align-items: center;
+  column-gap: 22px;
+  row-gap: 8px;
+  padding: 14px 18px 16px;
+  background: rgba(17, 17, 26, 0.8);
+  backdrop-filter: blur(18px);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.pb-info { grid-area: info; min-width: 0; }
+.progress-container { grid-area: progress; }
+.mini-viz-wrap { grid-area: viz; }
+
+/* Transport and volume form one group, centered under the seek slider */
+.pb-transport {
+  grid-area: transport;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  min-width: 0;
+  /* inset by the time stamps: controls + volume are centered as one group under the seek slider */
+  padding: 0 calc(var(--stamp-w) + var(--progress-gap));
+}
+
+#now-playing {
+  min-height: 1.4em; /* keeps the row height when the title is empty */
+  font-size: 1.05em;
+  font-weight: 650;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Long titles slide back and forth (updateMarquee() in renderer.js sets --shift / --dur) */
+.marquee-inner {
+  display: inline-block;
+  will-change: transform;
+}
+
+#now-playing.overflowing {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+}
+
+#now-playing.overflowing .marquee-inner {
+  animation: marquee var(--dur, 8s) ease-in-out infinite alternate;
+}
+
+@keyframes marquee {
+  0%, 18% { transform: translateX(0); }
+  82%, 100% { transform: translateX(var(--shift, 0px)); }
+}
+
+#now-folder {
+  margin-top: 3px;
+  font-size: 0.78em;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#now-folder:empty { display: none; }
+
+/* Transport */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.controls .icon-btn {
+  font-size: 19px;
+}
+
+#btn-prev,
+#btn-next {
+  color: var(--text);
+}
+
+#btn-play {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  margin: 0 6px;
+  font-size: 22px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 4px 18px var(--accent-glow);
+}
+
+#btn-play:hover {
+  background: var(--accent);
+  box-shadow: 0 4px 26px var(--accent-glow);
+  transform: scale(1.07);
+}
+
+#btn-play:active {
+  transform: scale(0.94);
+}
+
+/* Progress */
+.progress-container {
+  display: flex;
+  align-items: center;
+  gap: var(--progress-gap);
+}
+
+.time-stamp {
+  flex: none;
+  /* fixed width (fits hh:mm:ss) so nothing ever shifts when the format changes */
+  width: var(--stamp-w);
+  font-family: var(--font-mono);
+  font-size: 0.72em;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* text hugs the slider */
+#time-elapsed { text-align: right; }
+#time-duration { text-align: left; }
+
+.slider-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+#seek-tip {
+  position: absolute;
+  bottom: 18px;
+  transform: translateX(-50%);
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line-hi);
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+#seek-tip[hidden] { display: none; }
+
+/* Custom range sliders: --fill (0-100%) is kept up to date by paintRange() */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 18px;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent) var(--fill, 0%), rgba(255, 255, 255, 0.14) var(--fill, 0%));
+  transition: height 0.12s var(--ease);
+}
+
+input[type='range']:hover::-webkit-slider-runnable-track {
+  height: 6px;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 4px var(--accent-soft), 0 2px 6px rgba(0, 0, 0, 0.5);
+  transform: scale(0);
+  transition: transform 0.15s var(--ease);
+}
+
+input[type='range']:hover::-webkit-slider-thumb,
+input[type='range']:active::-webkit-slider-thumb {
+  transform: scale(1);
+}
+
+input[type='range']:hover::-webkit-slider-runnable-track {
+  margin-top: 0;
+}
+
+/* Volume */
+.volume-container {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+#vol-icon {
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+}
+
+#volume-slider {
+  width: 110px;
+}
+
+/* Mini visualizer / screensaver menu */
+.mini-viz-wrap {
+  position: relative;
+  display: flex;
+  align-self: stretch;
+  min-height: 92px;
+}
+
+#mini-viz {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: inset 0 0 0 1px var(--line-hi), 0 4px 14px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: box-shadow 0.2s var(--ease), transform 0.15s var(--ease);
+}
+
+#mini-viz:hover {
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.7), 0 4px 18px var(--accent-soft);
+}
+
+#mini-viz:active {
+  transform: scale(0.97);
+}
+
+#mini-viz-stage {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#mini-viz-stage canvas {
+  display: block;
+}
+
+#mini-viz-label {
+  display: none;
+}
+
+#mini-viz.disabled {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+#mini-viz.disabled:hover {
+  background: var(--surface-hi);
+}
+
+#mini-viz.disabled #mini-viz-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+#screensaver-menu {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  min-width: 190px;
+  padding: 6px;
+  z-index: 100;
+  overflow-y: auto;
+  background: rgba(32, 32, 48, 0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--line-hi);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  animation: pop-in 0.16s var(--ease);
+  transform-origin: bottom right;
+}
+
+#screensaver-menu[hidden] { display: none; }
+
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+#screensaver-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 2px;
+  text-align: left;
+  background: transparent;
+  border-color: transparent;
+}
+
+#screensaver-menu button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+#screensaver-menu button svg { font-size: 15px; color: var(--text-dim); }
+
+#screensaver-menu button.selected {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+#screensaver-menu button.selected::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* Opens to the left of the mini view as a grid (file list hidden: no room above) */
+#screensaver-menu.left {
+  bottom: 0;
+  right: calc(100% + 12px);
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 2px;
+  transform-origin: bottom right;
+}
+
+#screensaver-menu.left[hidden] { display: none; }
+#screensaver-menu.left #screensaver-list { display: contents; }
+#screensaver-menu.left button { margin-bottom: 0; white-space: nowrap; padding: 7px 12px; }
+#screensaver-menu.left .menu-divider { grid-column: 1 / -1; margin: 4px 2px; }
+
+.menu-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 2px 6px;
+}
+
+
+/* ==========================================
+   6. SETTINGS PANEL
+   ================================          */
+#settings-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(800px 360px at 20% -10%, rgba(var(--accent-rgb), 0.14), transparent 70%),
+    var(--bg-1);
+  animation: panel-in 0.22s var(--ease);
+}
+
+#settings-panel[hidden] { display: none; }
+
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 10px 18px;
+}
+
+.settings-header h2 {
+  font-size: 1.05em;
+  font-weight: 700;
+}
+
+#settings-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 2px 16px 12px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+#settings-tabs::-webkit-scrollbar { height: 0; }
+
+#settings-tabs button {
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 7px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-dim);
+}
+
+#settings-tabs button:hover { color: var(--text); }
+
+#settings-tabs button.active {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--on-accent);
+  font-weight: 700;
+  box-shadow: 0 2px 14px var(--accent-glow);
+}
+
+#settings-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 18px 24px;
+  user-select: text;
+}
+
+.setting-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(180px, 260px);
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 4px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  transition: border-color 0.15s var(--ease);
+}
+
+.setting-row:hover { border-color: var(--line-hi); }
+
+.setting-label {
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
+.setting-label code {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 0.75em;
+  font-weight: normal;
+  color: var(--text-faint);
+}
+
+.setting-help {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  font-size: 0.78em;
+  color: var(--text-dim);
+  white-space: pre-line;
+}
+
+#settings-body select {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line-hi);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.85em;
+}
+
+#settings-body input[type='color'] {
+  width: 60px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--line-hi);
+  border-radius: 8px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.color-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--swatch);
+  box-shadow: 0 0 0 1px var(--line-hi);
+}
+
+.swatch:hover { border-color: rgba(255, 255, 255, 0.5); background: var(--swatch); }
+.swatch.selected { border-color: #fff; }
+
+.range-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.range-control input { flex: 1; }
+
+.range-control output {
+  min-width: 42px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  color: var(--accent);
+}
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 26px;
+  justify-self: end;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle span {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 13px;
+  cursor: pointer;
+  transition: background 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.toggle span::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s var(--ease);
+}
+
+.toggle input:checked + span {
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.toggle input:checked + span::before { transform: translateX(20px); }
+
+.settings-reset {
+  margin-top: 14px;
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.settings-reset:hover {
+  background: #f38ba8;
+  border-color: transparent;
+  color: #11111b;
+}
+
+
+/* ==========================================
+   7. COMPACT MODE
+   Narrow player: title, progress, transport, then volume (left) + visualizer (right)
+   ================================          */
+body.compact .topbar { padding: 4px 6px; gap: 2px; }
+body.compact .topbar .icon-btn { width: 30px; height: 30px; font-size: 16px; }
+body.compact .crumbs { font-size: 0.78em; }
+body.compact .browser-container { padding: 4px 6px; }
+body.compact #file-list li { padding: 5px 8px; gap: 9px; font-size: 0.85em; }
+body.compact #file-list .row-icon { width: 24px; height: 24px; font-size: 13px; }
+
+body.compact .player-bar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'info info'
+    'transport transport'
+    'progress progress'
+    'vol viz';
+  gap: 8px 12px;
+  padding: 10px 14px 12px;
+}
+
+/* The transport wrapper dissolves so volume can drop to the bottom row */
+body.compact .pb-transport { display: contents; }
+body.compact .pb-transport .controls { grid-area: transport; }
+body.compact .pb-transport .volume-container { grid-area: vol; justify-self: start; }
+body.compact .mini-viz-wrap { min-height: 0; align-self: center; }
+body.compact .pb-info { text-align: center; }
+body.compact #now-playing { font-size: 0.92em; }
+body.compact #now-folder { display: none; }
+body.compact .controls { gap: 4px; }
+body.compact .controls .icon-btn { width: 34px; height: 34px; font-size: 17px; }
+body.compact #btn-play { width: 42px; height: 42px; font-size: 19px; }
+body.compact #volume-slider { width: 92px; }
+body.compact #mini-viz { flex: none; width: 124px; height: 34px; border-radius: 8px; }
+
+/* File list hidden (toggle in the top bar): path goes too, leaving just the buttons */
+body.no-list .browser-container,
+body.no-list .crumbs,
+body.no-list #btn-up { display: none; }
+
+body.no-list .topbar {
+  justify-content: flex-end;
+  padding: 3px 6px;
+  border-bottom: none;
+}
+
+body.no-list .topbar .icon-btn { width: 28px; height: 28px; font-size: 15px; }
+
+/* Narrow regular window: stack the bar */
+@media (max-width: 720px) {
+  body:not(.compact) .player-bar {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'info' 'transport' 'progress' 'viz';
+  }
+
+  body:not(.compact) .mini-viz-wrap { min-height: 44px; }
+}
+
+
+/* ==========================================
+   8. SCROLLBARS
+   ================================          */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.24);
+  background-clip: content-box;
+}
